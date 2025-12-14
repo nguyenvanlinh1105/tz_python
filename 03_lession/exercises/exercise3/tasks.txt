@@ -1,0 +1,7 @@
+Học Python;2025-01-10;done
+Đi tập gym;2025-01-09;todo
+Đi chơi;2025-01-08;done
+Đi làm;2025-12-15;todo
+Đi dạo;2025-12-16;todo
+Đi thi;2025-12-24;todo
+Đi ngủ;2025-12-14;todo
