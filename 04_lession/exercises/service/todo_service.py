@@ -1,6 +1,6 @@
 from fastapi import HTTPException
-from typing import Optional
-from models.todo import TodoCreate, TodoUpdate
+from typing import Optional, List
+from models.todo import TodoCreate, TodoUpdate, TodoOut
 
 _todos: list[dict] = []
 _id_counter = 1
@@ -15,7 +15,11 @@ def _is_title_exists(title: str, exclude_id: Optional[int] = None) -> bool:
     return False
 
 
-def create_todo(data: TodoCreate) -> dict:
+def _to_schema(todo: dict) -> TodoOut:
+    return TodoOut(**todo)
+
+
+def create_todo(data: TodoCreate) -> TodoOut:
     global _id_counter
 
     if _is_title_exists(data.title):
@@ -30,14 +34,15 @@ def create_todo(data: TodoCreate) -> dict:
     }
     _id_counter += 1
     _todos.append(todo)
-    return todo
 
+    return _to_schema(todo)
 
 def get_all_todos(
     done: Optional[bool],
     keyword: Optional[str],
     limit: int
-) -> list[dict]:
+) -> List[TodoOut]:
+
     result = _todos
 
     if done is not None:
@@ -47,15 +52,16 @@ def get_all_todos(
         kw = keyword.lower()
         result = [t for t in result if kw in t["title"].lower()]
 
-    return result[:limit]
+    return [_to_schema(t) for t in result[:limit]]
 
 
-def get_todo_by_id(todo_id: int) -> Optional[dict]:
-    return next((t for t in _todos if t["id"] == todo_id), None)
+def get_todo_by_id(todo_id: int) -> Optional[TodoOut]:
+    todo = next((t for t in _todos if t["id"] == todo_id), None)
+    return _to_schema(todo) if todo else None
 
 
-def update_todo_put(todo_id: int, data: TodoCreate) -> Optional[dict]:
-    todo = get_todo_by_id(todo_id)
+def update_todo_put(todo_id: int, data: TodoCreate) -> Optional[TodoOut]:
+    todo = next((t for t in _todos if t["id"] == todo_id), None)
     if not todo:
         return None
 
@@ -66,11 +72,11 @@ def update_todo_put(todo_id: int, data: TodoCreate) -> Optional[dict]:
         )
 
     todo.update(data.model_dump())
-    return todo
+    return _to_schema(todo)
 
 
-def update_todo_patch(todo_id: int, data: TodoUpdate) -> Optional[dict]:
-    todo = get_todo_by_id(todo_id)
+def update_todo_patch(todo_id: int, data: TodoUpdate) -> Optional[TodoOut]:
+    todo = next((t for t in _todos if t["id"] == todo_id), None)
     if not todo:
         return None
 
@@ -83,8 +89,7 @@ def update_todo_patch(todo_id: int, data: TodoUpdate) -> Optional[dict]:
     for k, v in data.model_dump(exclude_unset=True).items():
         todo[k] = v
 
-    return todo
-
+    return _to_schema(todo)
 
 def delete_todo(todo_id: int) -> bool:
     global _todos
